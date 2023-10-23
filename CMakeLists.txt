@@ -20,7 +20,7 @@ add_definitions(${PCL_DEFINITIONS})
 link_directories(${PCL_LIBRARY_DIRS})
 
 add_library(lib_hys SHARED
-src/hys.cpp)
+src/pointcloud_processor.cpp)
 
 target_link_libraries(lib_hys
                       ${PCL_LIBRARIES}

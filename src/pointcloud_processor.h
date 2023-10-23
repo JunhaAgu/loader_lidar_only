@@ -31,7 +31,7 @@
 namespace fs = std::experimental::filesystem;
 
 typedef pcl::PointCloud<pcl::PointXYZ> pointcloud;
-typedef std::vector<pointcloud,Eigen::aligned_allocator<pointcloud>> pointcloud_vector;
+typedef std::vector<pointcloud, Eigen::aligned_allocator<pointcloud>> pointcloud_vector;
 typedef std::vector<pointcloud::Ptr, Eigen::aligned_allocator<pointcloud::Ptr>> pointcloudptr_vector;
 
 typedef Eigen::Matrix4d Mat44;
@@ -52,8 +52,8 @@ class PointCloudProcessor
     public : 
         PointCloudProcessor();
         void InsertPointClouds(fs::path pc_path);
-        void SetVehicleToSensorTransformation(Mat44 T);
-        void SetVehicleToSensorTransformation(fs::path T_path); 
+        void ReadVehicleToSensorTransformation(Mat44 T);
+        void ReadVehicleToSensorTransformation(fs::path T_path); 
         void CheckPointClouds();
         void RemoveRedundantArea(std::vector<double> xrange,
         std::vector<double> yrange,std::vector<int> vidx);
@@ -65,11 +65,11 @@ class PointCloudProcessor
 
     protected :
         // before processing.
-        pointcloudptr_vector mvpc;
+        pointcloudptr_vector pcl_ptr_vec_;
         // after processing.
-        pointcloudptr_vector mvpc_processed;
+        pointcloudptr_vector pcl_ptr_vec_processed_;
         // vehicle to sensor transformation
-        Mat44 Tvc;
+        Mat44 Tvs;
 
 };
 
