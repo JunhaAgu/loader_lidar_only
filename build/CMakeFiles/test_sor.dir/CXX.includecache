@@ -6,7 +6,11 @@
 
 #IncludeRegexTransform: 
 
-/home/junhakim/WH_Proj/src/hys.h
+/home/junhakim/WH_Proj/src/main_sor.cpp
+pointcloud_processor.h
+/home/junhakim/WH_Proj/src/pointcloud_processor.h
+
+/home/junhakim/WH_Proj/src/pointcloud_processor.h
 iostream
 -
 thread
@@ -57,10 +61,6 @@ pcl/segmentation/sac_segmentation.h
 -
 Eigen/Core
 -
-
-/home/junhakim/WH_Proj/src/main_sor.cpp
-hys.h
-/home/junhakim/WH_Proj/src/hys.h
 
 /usr/include/eigen3/Eigen/Cholesky
 Core

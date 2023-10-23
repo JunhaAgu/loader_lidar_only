@@ -136,33 +136,6 @@ test_sor/fast:
 	$(MAKE) -f CMakeFiles/test_sor.dir/build.make CMakeFiles/test_sor.dir/build
 .PHONY : test_sor/fast
 
-src/hys.o: src/hys.cpp.o
-
-.PHONY : src/hys.o
-
-# target to build an object file
-src/hys.cpp.o:
-	$(MAKE) -f CMakeFiles/lib_hys.dir/build.make CMakeFiles/lib_hys.dir/src/hys.cpp.o
-.PHONY : src/hys.cpp.o
-
-src/hys.i: src/hys.cpp.i
-
-.PHONY : src/hys.i
-
-# target to preprocess a source file
-src/hys.cpp.i:
-	$(MAKE) -f CMakeFiles/lib_hys.dir/build.make CMakeFiles/lib_hys.dir/src/hys.cpp.i
-.PHONY : src/hys.cpp.i
-
-src/hys.s: src/hys.cpp.s
-
-.PHONY : src/hys.s
-
-# target to generate assembly for a file
-src/hys.cpp.s:
-	$(MAKE) -f CMakeFiles/lib_hys.dir/build.make CMakeFiles/lib_hys.dir/src/hys.cpp.s
-.PHONY : src/hys.cpp.s
-
 src/main_sor.o: src/main_sor.cpp.o
 
 .PHONY : src/main_sor.o
@@ -190,6 +163,33 @@ src/main_sor.cpp.s:
 	$(MAKE) -f CMakeFiles/test_sor.dir/build.make CMakeFiles/test_sor.dir/src/main_sor.cpp.s
 .PHONY : src/main_sor.cpp.s
 
+src/pointcloud_processor.o: src/pointcloud_processor.cpp.o
+
+.PHONY : src/pointcloud_processor.o
+
+# target to build an object file
+src/pointcloud_processor.cpp.o:
+	$(MAKE) -f CMakeFiles/lib_hys.dir/build.make CMakeFiles/lib_hys.dir/src/pointcloud_processor.cpp.o
+.PHONY : src/pointcloud_processor.cpp.o
+
+src/pointcloud_processor.i: src/pointcloud_processor.cpp.i
+
+.PHONY : src/pointcloud_processor.i
+
+# target to preprocess a source file
+src/pointcloud_processor.cpp.i:
+	$(MAKE) -f CMakeFiles/lib_hys.dir/build.make CMakeFiles/lib_hys.dir/src/pointcloud_processor.cpp.i
+.PHONY : src/pointcloud_processor.cpp.i
+
+src/pointcloud_processor.s: src/pointcloud_processor.cpp.s
+
+.PHONY : src/pointcloud_processor.s
+
+# target to generate assembly for a file
+src/pointcloud_processor.cpp.s:
+	$(MAKE) -f CMakeFiles/lib_hys.dir/build.make CMakeFiles/lib_hys.dir/src/pointcloud_processor.cpp.s
+.PHONY : src/pointcloud_processor.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -200,12 +200,12 @@ help:
 	@echo "... edit_cache"
 	@echo "... lib_hys"
 	@echo "... test_sor"
-	@echo "... src/hys.o"
-	@echo "... src/hys.i"
-	@echo "... src/hys.s"
 	@echo "... src/main_sor.o"
 	@echo "... src/main_sor.i"
 	@echo "... src/main_sor.s"
+	@echo "... src/pointcloud_processor.o"
+	@echo "... src/pointcloud_processor.i"
+	@echo "... src/pointcloud_processor.s"
 .PHONY : help
 
 

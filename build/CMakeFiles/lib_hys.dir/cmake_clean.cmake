@@ -1,5 +1,5 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/lib_hys.dir/src/hys.cpp.o"
+  "CMakeFiles/lib_hys.dir/src/pointcloud_processor.cpp.o"
   "liblib_hys.pdb"
   "liblib_hys.so"
 )
