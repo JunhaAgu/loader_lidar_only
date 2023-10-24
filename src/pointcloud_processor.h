@@ -28,6 +28,8 @@
 #include <pcl/segmentation/sac_segmentation.h>
 #include <Eigen/Core>
 
+#include <opencv2/opencv.hpp>
+
 namespace fs = std::experimental::filesystem;
 
 typedef pcl::PointCloud<pcl::PointXYZ> pointcloud;
@@ -49,8 +51,24 @@ typedef Eigen::Vector3d Vec3;
 
 class PointCloudProcessor
 {
-    public : 
+    public:
+        std::vector<float> pts_x_;
+        std::vector<float> pts_y_;
+        std::vector<float> pts_z_;
+        
+        std::vector<float> x_map_;
+        std::vector<float> y_map_;
+
+        pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_gridmap_;
+        std::vector<std::vector<int>> pts_idx_;
+
+        std::vector<int> object_row_;
+        std::vector<int> object_col_;
+        std::vector<float> object_rho_roi_;
+
+       public: 
         PointCloudProcessor();
+        ~PointCloudProcessor();
         void InsertPointClouds(fs::path pc_path);
         void ReadVehicleToSensorTransformation(Mat44 T);
         void ReadVehicleToSensorTransformation(fs::path T_path); 
@@ -58,6 +76,7 @@ class PointCloudProcessor
         void RemoveRedundantArea(std::vector<double> xrange,
         std::vector<double> yrange,std::vector<int> vidx);
         void RemoveGroundPlane(std::vector<int> vidx, double thres);
+        void GenerateGridMap(std::vector<int> vidx, float size_grid);
         void DenoisePointCloud(std::vector<int> vidx, int K, double K_std);
         void CheckMatrix();
         void ViewProcessedPointCloud(int i);

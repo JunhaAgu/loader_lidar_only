@@ -4,7 +4,41 @@ PointCloudProcessor::PointCloudProcessor()
 {
     // initialize Tvs with identity matrix
     this->Tvs = Mat44::Identity();
+
+    // initialization
+    pts_x_.reserve(100000);
+    pts_y_.reserve(100000);
+    pts_z_.reserve(100000);
+    
+    x_map_.reserve(100000);
+    y_map_.reserve(100000);
+
+    pts_idx_.resize(100000);
+    for (int i=0; i<100000; ++i)
+    {
+        pts_idx_[i].reserve(1000);
+    }
+
+    pcl_gridmap_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+
+    object_row_.reserve(100000);
+    object_col_.reserve(100000);
 }
+
+PointCloudProcessor::~PointCloudProcessor() {
+    // destructor
+
+    // pts_x_.resize(0);
+    // pts_y_.resize(0);
+    // pts_z_.resize(0);
+
+    // x_map_.resize(0);
+    // y_map_.resize(0);
+
+    // pts_idx_.resize(0);
+
+    // END YOUR CODE
+};
 
 void PointCloudProcessor::InsertPointClouds(fs::path pc_path)
 {
@@ -198,7 +232,7 @@ double thres)
     // make segmentation module
     pcl::SACSegmentation<pcl::PointXYZ> seg;
     seg.setOptimizeCoefficients(true);
-    
+
     seg.setModelType(pcl::SACMODEL_PERPENDICULAR_PLANE);
     // a model for determining a plane perpendicular to a user-specified axis, 
     // within a maximum specified angular deviation. The plane coefficients are similar to SACMODEL_PLANE .
@@ -231,6 +265,181 @@ double thres)
         pcl_ptr_vec_processed_[i_idx] = pcl_ground_removed;
     }
     return;
+}
+
+void PointCloudProcessor::GenerateGridMap(std::vector<int> vidx, float size_grid)
+{
+    pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_processed = this->pcl_ptr_vec_processed_[0];
+
+    int n_pcl_pts = pcl_processed->size();
+    std::cout << "# of pts: " << n_pcl_pts << std::endl;
+
+    for (int i=0; i<n_pcl_pts; ++i)
+    {
+        pcl::PointXYZ pts_tmp = pcl_processed->points[i];
+        pts_x_.push_back(pts_tmp.x);
+        pts_y_.push_back(pts_tmp.y);
+        pts_z_.push_back(pts_tmp.z);
+    }
+    float x_max = *max_element(pts_x_.begin(), pts_x_.end());
+    float x_min = *min_element(pts_x_.begin(), pts_x_.end());
+
+    float y_max = *max_element(pts_y_.begin(), pts_y_.end());
+    float y_min = *min_element(pts_y_.begin(), pts_y_.end());
+
+    std::cout << "x_max: " << x_max << std::endl;
+    std::cout << "x_min: " << x_min << std::endl;
+     std::cout << "y_max: " << y_max << std::endl;
+    std::cout << "y_min: " << y_min << std::endl;
+
+    int n_map_x = (int)ceilf32((x_max-x_min)/size_grid);
+    int n_map_y = (int)ceilf32((y_max-y_min)/size_grid);
+    std::cout << "n_map_x: " << n_map_x << std::endl;
+    std::cout << "n_map_y: " << n_map_y << std::endl;
+
+    for (int i=0; i<n_map_x; ++i)
+    {
+        x_map_.push_back(x_min + size_grid * i);
+    }
+    for (int i=0; i<n_map_y; ++i)
+    {
+        y_map_.push_back(y_min + size_grid * i);
+    }
+
+    int n_row = y_map_.size();
+    int n_col = x_map_.size();
+
+    std::cout << "n_row: " << n_row << std::endl;
+    std::cout << "n_col: " << n_col << std::endl;
+
+    cv::Mat grid_z = cv::Mat::zeros(n_row, n_col,CV_32FC1);
+    float* ptr_grid_z = grid_z.ptr<float>(0);
+
+    std::vector<float> x_diff(x_map_.size());
+    std::vector<float> y_diff(y_map_.size());
+
+    float pts_x_tmp = 0.0;
+    float pts_y_tmp = 0.0;
+
+    for (int i=0; i<pts_x_.size(); ++i)
+    {
+        pts_x_tmp = pts_x_[i];
+        pts_y_tmp = pts_y_[i];
+        for (int j = 0; j < x_map_.size(); ++j) {
+            x_diff[j] = fabs(pts_x_tmp - x_map_[j]);
+        }
+        int idx_x_min = min_element(x_diff.begin(), x_diff.end()) - x_diff.begin();
+
+        for (int k = 0; k < y_map_.size(); ++k) {
+            y_diff[k] = fabs(pts_y_tmp - y_map_[k]);
+        }
+        int idx_y_min = min_element(y_diff.begin(), y_diff.end()) - y_diff.begin();
+
+        int i_ncols_j = idx_y_min * n_col + idx_x_min;
+        if (*(ptr_grid_z + i_ncols_j)!=0) 
+        {
+            *(ptr_grid_z + i_ncols_j) = pts_z_[i];
+            pts_idx_[i_ncols_j].push_back(i);
+            // pcl_gridmap_->push_back(pcl::PointXYZ(pts_x_[i], pts_y_[i], pts_z_[i]));
+        }
+        else if (*(ptr_grid_z + i_ncols_j) < pts_z_[i])
+        {
+            *(ptr_grid_z + i_ncols_j) = pts_z_[i];
+            pts_idx_[i_ncols_j].push_back(i);
+            // pcl_gridmap_->push_back(pcl::PointXYZ(pts_x_[i], pts_y_[i], pts_z_[i]));
+        }
+    }
+
+    //// remove outlier via bwlabel ////
+
+    cv::Mat bin_grid_z = cv::Mat::zeros(n_row, n_col, CV_8UC1);
+    unsigned char* ptr_bin_grid_z = bin_grid_z.ptr<uchar>(0);
+
+    for(int i=0; i<n_row; ++i)
+    {
+        int i_ncols = i * n_col;
+        for(int j=0; j<n_col; ++j)
+        {
+            if(*(ptr_grid_z + i_ncols + j)!=0)
+            {
+                *(ptr_bin_grid_z + i_ncols + j) = 255;
+            }
+        }
+    }
+
+    // Label objects in 2D image
+
+    cv::Mat object_label = cv::Mat::zeros(n_row, n_col, CV_32SC1);
+    int* ptr_object_label = object_label.ptr<int>(0);
+
+    cv::Mat grid_z_valid = cv::Mat::zeros(n_row, n_col, CV_32FC1);
+    float* ptr_grid_z_valid = grid_z_valid.ptr<float>(0);
+
+    cv::Mat stats, centroids;
+    int n_label = cv::connectedComponentsWithStats(bin_grid_z, object_label,
+                                                   stats, centroids, 8);
+
+    if (n_label == 0) {
+        return;
+    }
+    std::cout << n_label <<std::endl;
+    int max_n_seg = 0;
+
+    for (int object_idx = 0; object_idx < n_label; ++object_idx) 
+    {
+        if (object_idx == 0)  // background (major portion)
+        {
+            continue;
+        }
+        object_row_.resize(0);
+        object_col_.resize(0);
+
+        int obj_left = stats.at<int>(object_idx, cv::CC_STAT_LEFT);
+        int obj_top = stats.at<int>(object_idx, cv::CC_STAT_TOP);
+        int obj_width = stats.at<int>(object_idx, cv::CC_STAT_WIDTH);
+        int obj_height = stats.at<int>(object_idx, cv::CC_STAT_HEIGHT);
+
+        for (int i = obj_top; i < obj_top + obj_height; ++i) {
+            int i_ncols = i * n_col;
+            for (int j = obj_left; j < obj_left + obj_width; ++j) {
+                if (*(ptr_object_label + i_ncols + j) == object_idx) {
+                    object_row_.push_back(i);
+                    object_col_.push_back(j);
+                }
+            }
+        }
+
+        if (object_row_.size() < 50) 
+        {
+            continue;
+        } 
+        if (object_row_.size() < max_n_seg)
+        {
+            continue;
+        }
+        max_n_seg = object_row_.size();
+
+        for (int i=0; i<object_row_.size(); ++i)
+        {
+            int i_valid = object_row_[i];
+            for (int j=0; j<object_col_.size(); ++j)
+            {
+                int j_valid = object_col_[i];
+                *(ptr_grid_z_valid + i_valid * n_col + j_valid) = 255;
+            }
+        }
+    }  // end for object_idx
+
+    std::cout << "max #" << max_n_seg << std::endl;
+
+    cv::imshow("grid_z_valid", grid_z_valid);
+    // cv::imshow("grid_z", grid_z);
+    cv::waitKey(0);
+    exit(0);
+
+
+
+    // this->pcl_ptr_vec_processed_[0] = pcl_gridmap_;
 }
 
 void PointCloudProcessor::DenoisePointCloud(std::vector<int> vidx,

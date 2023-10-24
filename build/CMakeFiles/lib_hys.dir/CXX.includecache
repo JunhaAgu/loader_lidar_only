@@ -61,6 +61,8 @@ pcl/segmentation/sac_segmentation.h
 -
 Eigen/Core
 -
+opencv2/opencv.hpp
+-
 
 /usr/include/eigen3/Eigen/Cholesky
 Core

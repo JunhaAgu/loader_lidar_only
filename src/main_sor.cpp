@@ -53,11 +53,19 @@ int main(int argc, char* argv[])
     timer.End();
     std::cerr << "[RemoveRedundantArea] : " <<timer.PrintToSecond() << " second" << std::endl;
     // check the result with pointcloud viewer.
-    pcp->ViewProcessedPointCloud(process_idx[0]);
+    // pcp->ViewProcessedPointCloud(process_idx[0]);
 
     // Test Remove Ground Plane module
     timer.Start();
     pcp->RemoveGroundPlane(process_idx,0.1);
+    timer.End();
+    std::cerr << "[RemoveGroundPlane] : " <<timer.PrintToSecond() << " second" << std::endl;
+    // pcp->ViewProcessedPointCloud(process_idx[0]);
+
+    // Test Generate Grid-map
+    timer.Start();
+    float size_grid = 0.3;
+    pcp->GenerateGridMap(process_idx, size_grid);
     timer.End();
     std::cerr << "[RemoveGroundPlane] : " <<timer.PrintToSecond() << " second" << std::endl;
     pcp->ViewProcessedPointCloud(process_idx[0]);
