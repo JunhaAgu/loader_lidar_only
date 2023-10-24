@@ -60,21 +60,21 @@ int main(int argc, char* argv[])
     pcp->RemoveGroundPlane(process_idx,0.1);
     timer.End();
     std::cerr << "[RemoveGroundPlane] : " <<timer.PrintToSecond() << " second" << std::endl;
-    // pcp->ViewProcessedPointCloud(process_idx[0]);
+    pcp->ViewProcessedPointCloud(process_idx[0]);
 
     // Test Generate Grid-map
     timer.Start();
     float size_grid = 0.3;
     pcp->GenerateGridMap(process_idx, size_grid);
     timer.End();
-    std::cerr << "[RemoveGroundPlane] : " <<timer.PrintToSecond() << " second" << std::endl;
+    std::cerr << "[GenerateGridMap] : " <<timer.PrintToSecond() << " second" << std::endl;
     pcp->ViewProcessedPointCloud(process_idx[0]);
 
     // Test Denoise PointCloud
-    timer.Start();
-    pcp->DenoisePointCloud(process_idx,50,1.0);
-    timer.End();
-    std::cerr << "[DenoisePointCloud] : " <<timer.PrintToSecond() << " second" << std::endl;
-    pcp->ViewProcessedPointCloud(process_idx[0]);
-    return 1;
+    // timer.Start();
+    // pcp->DenoisePointCloud(process_idx,50,1.0);
+    // timer.End();
+    // std::cerr << "[DenoisePointCloud] : " <<timer.PrintToSecond() << " second" << std::endl;
+    // pcp->ViewProcessedPointCloud(process_idx[0]);
+    // return 1;
 }

@@ -269,14 +269,18 @@ double thres)
 
 void PointCloudProcessor::GenerateGridMap(std::vector<int> vidx, float size_grid)
 {
+    // ComputationTimer timer;
+    // timer.Start();
     pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_processed = this->pcl_ptr_vec_processed_[0];
 
     int n_pcl_pts = pcl_processed->size();
     std::cout << "# of pts: " << n_pcl_pts << std::endl;
 
+    pcl::PointXYZ pts_tmp;
+
     for (int i=0; i<n_pcl_pts; ++i)
     {
-        pcl::PointXYZ pts_tmp = pcl_processed->points[i];
+        pts_tmp = pcl_processed->points[i];
         pts_x_.push_back(pts_tmp.x);
         pts_y_.push_back(pts_tmp.y);
         pts_z_.push_back(pts_tmp.z);
@@ -297,13 +301,18 @@ void PointCloudProcessor::GenerateGridMap(std::vector<int> vidx, float size_grid
     std::cout << "n_map_x: " << n_map_x << std::endl;
     std::cout << "n_map_y: " << n_map_y << std::endl;
 
+    float size_grid_accum = 0;
     for (int i=0; i<n_map_x; ++i)
     {
-        x_map_.push_back(x_min + size_grid * i);
+        x_map_.push_back(x_min + size_grid_accum);
+        size_grid_accum += size_grid;
     }
+
+    size_grid_accum = 0;
     for (int i=0; i<n_map_y; ++i)
     {
-        y_map_.push_back(y_min + size_grid * i);
+        y_map_.push_back(y_min + size_grid_accum);
+        size_grid_accum += size_grid;
     }
 
     int n_row = y_map_.size();
@@ -312,42 +321,70 @@ void PointCloudProcessor::GenerateGridMap(std::vector<int> vidx, float size_grid
     std::cout << "n_row: " << n_row << std::endl;
     std::cout << "n_col: " << n_col << std::endl;
 
-    cv::Mat grid_z = cv::Mat::zeros(n_row, n_col,CV_32FC1);
+    cv::Mat grid_z = -0.5*cv::Mat::ones(n_row, n_col,CV_32FC1);
     float* ptr_grid_z = grid_z.ptr<float>(0);
 
     std::vector<float> x_diff(x_map_.size());
     std::vector<float> y_diff(y_map_.size());
+    float* ptr_x_diff = x_diff.data();
+    float* ptr_y_diff = y_diff.data();
 
     float pts_x_tmp = 0.0;
     float pts_y_tmp = 0.0;
 
+    float* ptr_pts_x_ = pts_x_.data();
+    float* ptr_pts_y_ = pts_y_.data();
+    float* ptr_x_map_ = x_map_.data();
+    float* ptr_y_map_ = y_map_.data();
+
+    int idx_x_min = 0;
+    int idx_y_min = 0;
+
+    float x_diff_tmp = 0.0;
+    float y_diff_tmp = 0.0;
     for (int i=0; i<pts_x_.size(); ++i)
     {
-        pts_x_tmp = pts_x_[i];
-        pts_y_tmp = pts_y_[i];
-        for (int j = 0; j < x_map_.size(); ++j) {
-            x_diff[j] = fabs(pts_x_tmp - x_map_[j]);
-        }
-        int idx_x_min = min_element(x_diff.begin(), x_diff.end()) - x_diff.begin();
+        pts_x_tmp = ptr_pts_x_[i];
+        pts_y_tmp = ptr_pts_y_[i];
 
-        for (int k = 0; k < y_map_.size(); ++k) {
-            y_diff[k] = fabs(pts_y_tmp - y_map_[k]);
+        for (int j = 0; j < x_map_.size(); ++j) {
+            x_diff_tmp = (pts_x_tmp - ptr_x_map_[j]);
+            if (x_diff_tmp<0)
+            {
+                idx_x_min = j;
+                break;
+            }
         }
-        int idx_y_min = min_element(y_diff.begin(), y_diff.end()) - y_diff.begin();
+        // for (int j = 0; j < x_map_.size(); ++j) {
+        //     ptr_x_diff[j] = fabs(pts_x_tmp - ptr_x_map_[j]);
+        // }
+        // idx_x_min = min_element(x_diff.begin(), x_diff.end()) - x_diff.begin();
+        for (int k = 0; k < y_map_.size(); ++k) {
+            y_diff_tmp = (pts_y_tmp - ptr_y_map_[k]);
+            if (y_diff_tmp<0)
+            {
+                idx_y_min = k;
+                break;
+            }
+        }
+        // for (int k = 0; k < y_map_.size(); ++k) {
+        //     ptr_y_diff[k] = fabs(pts_y_tmp - ptr_y_map_[k]);
+        // }
+        // idx_y_min = min_element(y_diff.begin(), y_diff.end()) - y_diff.begin();
 
         int i_ncols_j = idx_y_min * n_col + idx_x_min;
-        if (*(ptr_grid_z + i_ncols_j)!=0) 
-        {
+        // if (*(ptr_grid_z + i_ncols_j)!=0) 
+        // {
             *(ptr_grid_z + i_ncols_j) = pts_z_[i];
             pts_idx_[i_ncols_j].push_back(i);
             // pcl_gridmap_->push_back(pcl::PointXYZ(pts_x_[i], pts_y_[i], pts_z_[i]));
-        }
-        else if (*(ptr_grid_z + i_ncols_j) < pts_z_[i])
-        {
-            *(ptr_grid_z + i_ncols_j) = pts_z_[i];
-            pts_idx_[i_ncols_j].push_back(i);
-            // pcl_gridmap_->push_back(pcl::PointXYZ(pts_x_[i], pts_y_[i], pts_z_[i]));
-        }
+        // }
+        // else if (*(ptr_grid_z + i_ncols_j) < pts_z_[i])
+        // {
+        //     *(ptr_grid_z + i_ncols_j) = pts_z_[i];
+        //     pts_idx_[i_ncols_j].push_back(i);
+        //     // pcl_gridmap_->push_back(pcl::PointXYZ(pts_x_[i], pts_y_[i], pts_z_[i]));
+        // }
     }
 
     //// remove outlier via bwlabel ////
@@ -360,7 +397,7 @@ void PointCloudProcessor::GenerateGridMap(std::vector<int> vidx, float size_grid
         int i_ncols = i * n_col;
         for(int j=0; j<n_col; ++j)
         {
-            if(*(ptr_grid_z + i_ncols + j)!=0)
+            if(*(ptr_grid_z + i_ncols + j)>-0.5)
             {
                 *(ptr_bin_grid_z + i_ncols + j) = 255;
             }
@@ -430,16 +467,37 @@ void PointCloudProcessor::GenerateGridMap(std::vector<int> vidx, float size_grid
         }
     }  // end for object_idx
 
-    std::cout << "max #" << max_n_seg << std::endl;
+    int cnt = 0;
+    for (int i=0; i<n_row; ++i)
+    {
+        int i_ncols = i * n_col;
+        for (int j=0; j<n_col; ++j)
+        {
+            if (*(ptr_grid_z_valid + i_ncols + j) != 0) 
+            {
+                int i_ncols_j = i_ncols + j;
+                for (int k=0; k<pts_idx_[i_ncols_j].size(); ++k)
+                {
+                    int pts_idx = pts_idx_[i_ncols_j][k];
+                    cnt += 1;       
+                    pcl_gridmap_->push_back(pcl::PointXYZ(pts_x_[pts_idx], pts_y_[pts_idx], pts_z_[pts_idx]));
+                }
+            }
+        }
+    }
+    std::cout << "cnt: " << cnt << std::endl;
+    std::cout << "max #: " << max_n_seg << std::endl;
 
     cv::imshow("grid_z_valid", grid_z_valid);
     // cv::imshow("grid_z", grid_z);
-    cv::waitKey(0);
-    exit(0);
+    // cv::waitKey(0);
+    // exit(0);
 
+    this->pcl_ptr_vec_processed_[0] = pcl_gridmap_;
 
+    //     timer.End();
+    // std::cerr << "[GenerateGridMap] : " <<timer.PrintToSecond() << " second" << std::endl;
 
-    // this->pcl_ptr_vec_processed_[0] = pcl_gridmap_;
 }
 
 void PointCloudProcessor::DenoisePointCloud(std::vector<int> vidx,
